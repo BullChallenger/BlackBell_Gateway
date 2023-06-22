@@ -1,5 +1,6 @@
-package com.example.blackbell_gateway.config;
+package com.example.blackbell_gateway.filter;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -10,29 +11,37 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
-public class CustomGatewayFilter extends AbstractGatewayFilterFactory<CustomGatewayFilter.Config> {
+public class GlobalGatewayFilter extends AbstractGatewayFilterFactory<GlobalGatewayFilter.Config> {
 
-    public CustomGatewayFilter() {
-        super(Config.class);
+    public GlobalGatewayFilter() {
+        super(GlobalGatewayFilter.Config.class);
     }
 
     @Override
-    public GatewayFilter apply(Config config) {
+    public GatewayFilter apply(GlobalGatewayFilter.Config config) {
         // Custom Pre Filter
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
             ServerHttpResponse response = exchange.getResponse();
 
-            log.info("Custom Pre Filter: request id -> {}", request.getId());
+            log.info("Global Filter baseMessage: {}", config.getBaseMessage());
 
+            if (config.isPreLogger()) {
+                log.info("Global Filter Start: request id -> {}", request.getId());
+            }
             // Custom Post Filter
             return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-                log.info("Custom Pre Filter: response code -> {}", response.getStatusCode());
+                if (config.isPostLogger()) {
+                    log.info("Global Filter End: response code -> {}", response.getStatusCode());
+                }
             }));
         };
     }
 
+    @Data
     public static class Config {
-
+        private String baseMessage;
+        private boolean preLogger;
+        private boolean postLogger;
     }
 }
